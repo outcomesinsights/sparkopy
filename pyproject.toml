@@ -27,8 +27,8 @@ dependencies = [
 test = ["pytest"]
 
 [project.urls]
-Homepage = "https://github.com/pypa/sampleproject"
-Issues = "https://github.com/pypa/sampleproject/issues"
+Homepage = "https://github.com/outcomesinsights/sparkopy"
+Issues = "https://github.com/outcomesinsights/sparkopy/issues"
 
 [project.scripts]
 sparkopy = "sparkopy:cli"
