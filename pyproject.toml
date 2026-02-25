@@ -20,7 +20,7 @@ dependencies = [
   "grpcio-status",
   "pandas==2.3.3",
   "protobuf",
-  "pyarrow==16.0.0"
+  "pyarrow==23.0.1"
 ]
 
 [project.optional-dependencies]
