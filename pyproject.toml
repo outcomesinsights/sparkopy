@@ -18,7 +18,7 @@ dependencies = [
   "databricks-connect==14.3.1",
   "grpcio",
   "grpcio-status",
-  "pandas==2.2.2",
+  "pandas==2.3.3",
   "protobuf",
   "pyarrow==16.0.0"
 ]
