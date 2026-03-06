@@ -1,10 +1,21 @@
 from unittest.mock import MagicMock, patch
 
 import pandas as pd
+import pyarrow as pa
 import pyarrow.parquet as pq
 from click.testing import CliRunner
 
-from sparkopy import cli, dump_table, get_databricks_session, get_spark, get_spark_session
+from sparkopy import (
+    LARGE_TABLE_THRESHOLD,
+    _unify_schema,
+    cli,
+    dump_table,
+    dump_table_simple,
+    dump_table_streaming,
+    get_databricks_session,
+    get_spark,
+    get_spark_session,
+)
 
 
 def _make_mock_spark(rows=100, attrs=None):
@@ -22,18 +33,167 @@ def _make_mock_spark(rows=100, attrs=None):
     return spark
 
 
+def _make_streaming_mock_df(total_rows, batch_size=1000):
+    """Build a mock DataFrame whose _plan/_session produces Arrow RecordBatches
+    via the streaming iterator."""
+    schema = pa.schema([
+        pa.field("a", pa.int64()),
+        pa.field("b", pa.string()),
+    ])
+
+    batches = []
+    remaining = total_rows
+    while remaining > 0:
+        n = min(batch_size, remaining)
+        batch = pa.record_batch(
+            [pa.array(range(n)), pa.array([f"val_{i}" for i in range(n)])],
+            schema=schema,
+        )
+        batches.append(batch)
+        remaining -= n
+
+    mock_df = MagicMock()
+    mock_plan = MagicMock()
+    mock_client = MagicMock()
+
+    mock_df._plan = mock_plan
+    mock_df._session.client = mock_client
+    mock_client._execute_and_fetch_as_iterator.return_value = iter(batches)
+
+    return mock_df
+
+
 # ---------------------------------------------------------------------------
-# dump_table
+# dump_table_simple (small tables)
+# ---------------------------------------------------------------------------
+class TestDumpTableSimple:
+    def test_writes_parquet(self, tmp_path):
+        out = tmp_path / "out.parquet"
+        pdf = pd.DataFrame({"a": [1, 2, 3], "b": ["x", "y", "z"]})
+        mock_df = MagicMock()
+        mock_df.toPandas.return_value = pdf
+        dump_table_simple(mock_df, str(out))
+
+        table = pq.read_table(str(out))
+        assert table.num_rows == 3
+        assert set(table.column_names) == {"a", "b"}
+
+    def test_strips_metrics_attr(self, tmp_path):
+        out = tmp_path / "out.parquet"
+        pdf = pd.DataFrame({"a": [1]})
+        pdf.attrs["metrics"] = {"some": "data"}
+        mock_df = MagicMock()
+        mock_df.toPandas.return_value = pdf
+        dump_table_simple(mock_df, str(out))
+
+        table = pq.read_table(str(out))
+        assert table.num_rows == 1
+
+
+# ---------------------------------------------------------------------------
+# dump_table_streaming (large tables)
+# ---------------------------------------------------------------------------
+class TestDumpTableStreaming:
+    def test_writes_all_rows(self, tmp_path):
+        out = tmp_path / "out.parquet"
+        mock_df = _make_streaming_mock_df(2500, batch_size=1000)
+
+        dump_table_streaming(mock_df, str(out), 2500)
+
+        table = pq.read_table(str(out))
+        assert table.num_rows == 2500
+        assert set(table.column_names) == {"a", "b"}
+
+    def test_raises_on_zero_rows(self, tmp_path):
+        import pytest
+
+        out = tmp_path / "out.parquet"
+        mock_df = _make_streaming_mock_df(0)
+
+        with pytest.raises(RuntimeError, match="No rows exported"):
+            dump_table_streaming(mock_df, str(out), 100)
+
+    def test_progress_output(self, tmp_path, capsys):
+        out = tmp_path / "out.parquet"
+        mock_df = _make_streaming_mock_df(2000, batch_size=1000)
+
+        dump_table_streaming(mock_df, str(out), 2000)
+
+        captured = capsys.readouterr().err
+        assert "1,000" in captured
+        assert "2,000" in captured
+
+    def test_single_batch(self, tmp_path):
+        out = tmp_path / "out.parquet"
+        mock_df = _make_streaming_mock_df(500, batch_size=500)
+
+        dump_table_streaming(mock_df, str(out), 500)
+
+        table = pq.read_table(str(out))
+        assert table.num_rows == 500
+
+    def test_handles_schema_variations(self, tmp_path):
+        """Batches with different decimal precisions should be unified."""
+        from decimal import Decimal
+
+        out = tmp_path / "out.parquet"
+
+        schema1 = pa.schema([pa.field("x", pa.decimal128(9, 3))])
+        schema2 = pa.schema([pa.field("x", pa.decimal128(12, 3))])
+
+        batch1 = pa.record_batch([pa.array([Decimal("1.500")], type=pa.decimal128(9, 3))], schema=schema1)
+        batch2 = pa.record_batch([pa.array([Decimal("2.500")], type=pa.decimal128(12, 3))], schema=schema2)
+
+        mock_df = MagicMock()
+        mock_df._session.client._execute_and_fetch_as_iterator.return_value = iter([batch1, batch2])
+
+        dump_table_streaming(mock_df, str(out), 2)
+
+        table = pq.read_table(str(out))
+        assert table.num_rows == 2
+        assert table.schema.field("x").type == pa.decimal128(12, 3)
+
+
+# ---------------------------------------------------------------------------
+# _unify_schema
+# ---------------------------------------------------------------------------
+class TestUnifySchema:
+    def test_same_schemas(self):
+        s = pa.schema([pa.field("a", pa.int64())])
+        assert _unify_schema(s, s) == s
+
+    def test_decimal_precision_widening(self):
+        s1 = pa.schema([pa.field("x", pa.decimal128(9, 3))])
+        s2 = pa.schema([pa.field("x", pa.decimal128(12, 3))])
+        result = _unify_schema(s1, s2)
+        assert result.field("x").type == pa.decimal128(12, 3)
+
+    def test_incompatible_types_fallback_to_string(self):
+        s1 = pa.schema([pa.field("x", pa.int64())])
+        s2 = pa.schema([pa.field("x", pa.string())])
+        result = _unify_schema(s1, s2)
+        assert result.field("x").type == pa.string()
+
+
+# ---------------------------------------------------------------------------
+# dump_table (routing logic)
 # ---------------------------------------------------------------------------
 class TestDumpTable:
-    def test_writes_parquet(self, tmp_path):
+    def test_small_table_uses_simple_path(self, tmp_path):
         out = tmp_path / "out.parquet"
         spark = _make_mock_spark(rows=5)
         dump_table(spark, "db", "tbl", str(out))
 
-        table = pq.read_table(str(out))
-        assert table.num_rows == 5
-        assert set(table.column_names) == {"a", "b"}
+        spark.read.table.return_value.toPandas.assert_called_once()
+
+    @patch("sparkopy.dump_table_streaming")
+    def test_large_table_uses_streaming_path(self, mock_streaming, tmp_path):
+        out = tmp_path / "out.parquet"
+        spark = _make_mock_spark(rows=LARGE_TABLE_THRESHOLD + 1)
+
+        dump_table(spark, "db", "tbl", str(out))
+
+        mock_streaming.assert_called_once()
 
     def test_reads_correct_table(self, tmp_path):
         out = tmp_path / "out.parquet"
@@ -50,46 +210,21 @@ class TestDumpTable:
         calls = {c.args[0]: c.args[1] for c in spark.conf.set.call_args_list}
         assert calls["spark.sql.execution.arrow.pyspark.enabled"] == "true"
         assert calls["spark.sql.execution.arrow.maxRecordsPerBatch"] == "10000"
-        assert calls["spark.driver.maxResultSize"] == "4g"
 
-    def test_prints_row_count(self, tmp_path, capsys):
+    def test_prints_row_count_to_stderr(self, tmp_path, capsys):
         out = tmp_path / "out.parquet"
         spark = _make_mock_spark(rows=1234)
         dump_table(spark, "db", "tbl", str(out))
 
-        captured = capsys.readouterr().out
+        captured = capsys.readouterr().err
         assert "1,234 rows" in captured
 
-    def test_large_table_warning(self, tmp_path, capsys):
-        out = tmp_path / "out.parquet"
-        spark = _make_mock_spark(rows=6_000_000)
-        dump_table(spark, "db", "tbl", str(out))
-
-        captured = capsys.readouterr().out
-        assert "Large table detected" in captured
-
-    def test_no_warning_under_threshold(self, tmp_path, capsys):
-        out = tmp_path / "out.parquet"
-        spark = _make_mock_spark(rows=100)
-        dump_table(spark, "db", "tbl", str(out))
-
-        captured = capsys.readouterr().out
-        assert "Large table detected" not in captured
-
-    def test_strips_metrics_attr(self, tmp_path):
-        out = tmp_path / "out.parquet"
-        spark = _make_mock_spark(rows=3, attrs={"metrics": {"some": "data"}})
-        dump_table(spark, "db", "tbl", str(out))
-
-        table = pq.read_table(str(out))
-        assert table.num_rows == 3
-
-    def test_success_message(self, tmp_path, capsys):
+    def test_success_message_to_stderr(self, tmp_path, capsys):
         out = tmp_path / "out.parquet"
         spark = _make_mock_spark()
         dump_table(spark, "db", "tbl", str(out))
 
-        captured = capsys.readouterr().out
+        captured = capsys.readouterr().err
         assert f"Successfully exported to {out}" in captured
 
 
