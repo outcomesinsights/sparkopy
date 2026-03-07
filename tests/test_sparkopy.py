@@ -36,10 +36,12 @@ def _make_mock_spark(rows=100, attrs=None):
 def _make_streaming_mock_df(total_rows, batch_size=1000):
     """Build a mock DataFrame whose _plan/_session produces Arrow RecordBatches
     via the streaming iterator."""
-    schema = pa.schema([
-        pa.field("a", pa.int64()),
-        pa.field("b", pa.string()),
-    ])
+    schema = pa.schema(
+        [
+            pa.field("a", pa.int64()),
+            pa.field("b", pa.string()),
+        ]
+    )
 
     batches = []
     remaining = total_rows
@@ -141,8 +143,12 @@ class TestDumpTableStreaming:
         schema1 = pa.schema([pa.field("x", pa.decimal128(9, 3))])
         schema2 = pa.schema([pa.field("x", pa.decimal128(12, 3))])
 
-        batch1 = pa.record_batch([pa.array([Decimal("1.500")], type=pa.decimal128(9, 3))], schema=schema1)
-        batch2 = pa.record_batch([pa.array([Decimal("2.500")], type=pa.decimal128(12, 3))], schema=schema2)
+        batch1 = pa.record_batch(
+            [pa.array([Decimal("1.500")], type=pa.decimal128(9, 3))], schema=schema1
+        )
+        batch2 = pa.record_batch(
+            [pa.array([Decimal("2.500")], type=pa.decimal128(12, 3))], schema=schema2
+        )
 
         mock_df = MagicMock()
         mock_df._session.client._execute_and_fetch_as_iterator.return_value = iter([batch1, batch2])

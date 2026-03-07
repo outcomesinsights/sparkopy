@@ -41,7 +41,7 @@ def _unify_schema(existing, incoming):
     For decimal types, picks the wider precision/scale. For other type
     mismatches, falls back to string."""
     fields = []
-    for ef, nf in zip(existing, incoming):
+    for ef, nf in zip(existing, incoming, strict=True):
         if ef.type == nf.type:
             fields.append(ef)
         elif pa.types.is_decimal(ef.type) and pa.types.is_decimal(nf.type):
@@ -58,8 +58,6 @@ def _stream_arrow_batches(df):
     into the internal gRPC streaming iterator.
 
     This avoids materializing the entire result set in memory."""
-    from pyspark.sql.types import StructType
-
     plan = df._plan.to_proto(df._session.client)
     req = df._session.client._execute_plan_request_with_metadata()
     req.plan.CopyFrom(plan)
