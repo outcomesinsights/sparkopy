@@ -1,7 +1,7 @@
 {
   "database": "dolt",
-  "jsonl_export": "issues.jsonl",
   "backend": "dolt",
   "dolt_mode": "server",
-  "dolt_database": "beads_sparkopy"
+  "dolt_database": "sparkopy",
+  "project_id": "a4995fa8-0d10-4a10-8b1b-6adf85008bdc"
 }
