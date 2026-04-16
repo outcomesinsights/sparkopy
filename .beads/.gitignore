@@ -21,6 +21,9 @@ push-state.json
 # Lock files (various runtime locks)
 *.lock
 
+# Local credential material
+.beads-credential-key
+
 # Local version tracking (prevents upgrade notification spam after git ops)
 .local_version
 
@@ -44,6 +47,10 @@ dolt-server.pid
 dolt-server.log
 dolt-server.lock
 dolt-server.port
+dolt-server.activity
+
+# Local recovery scratch from manual repair
+dolt.pre_fix_*/
 
 # Corrupt backup directories (created by bd doctor --fix recovery)
 *.corrupt.backup/

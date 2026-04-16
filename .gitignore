@@ -162,3 +162,10 @@ cython_debug/
 # Dolt database files (added by bd init)
 .dolt/
 *.db
+
+# Local Claude settings/work products
+.claude/
+
+# Generated comparison outputs
+databricks/
+spark/
