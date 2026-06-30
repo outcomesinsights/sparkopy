@@ -14,7 +14,7 @@ classifiers = [
 ]
 
 dependencies = [
-  "click==8.4.1",
+  "click==8.4.2",
   "databricks-connect==16.1.7",
   "grpcio",
   "grpcio-status",
