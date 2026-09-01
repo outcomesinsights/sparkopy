@@ -20,7 +20,7 @@ dependencies = [
   "grpcio-status",
   "pandas==2.3.3",
   "protobuf",
-  "pyarrow==24.0.0",
+  "pyarrow==25.0.1",
   "pyasn1>=0.6.3",
 ]
 
