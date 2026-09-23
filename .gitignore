@@ -173,3 +173,7 @@ spark/
 # Beads / Dolt files (added by bd init)
 .beads-credential-key
 .beads/proxieddb/
+
+# bd agent-audit sidecar: never versioned (hm-40s). Root, not .beads/.gitignore,
+# because a first-time bd 1.1.2 `bd init` rewrites .beads/.gitignore wholesale.
+.beads/interactions.jsonl
