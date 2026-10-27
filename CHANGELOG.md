@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.1] - 2026-10-27
+
+### Changed
+
+- **deps:** Upgrade tonic, prost and protox together ([1d33974](https://github.com/outcomesinsights/sparkopy/commit/1d339740c9c58451b34e00ff156a08b81e4be1d2))
+
 ## [0.1.0] - 2026-10-27
 
 ### Breaking changes
@@ -24,4 +30,5 @@
 - Allow dependabot auto-merge for git SHA ref bumps ([9940b46](https://github.com/outcomesinsights/sparkopy/commit/9940b4607948fae68365472b68a7789ab8f06838))
 - Update project URLs to actual repository ([37d5e84](https://github.com/outcomesinsights/sparkopy/commit/37d5e84eeb57c0eb1c1d4422c5837dcf2113ffc3))
 
+[0.1.1]: https://github.com/outcomesinsights/sparkopy/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/outcomesinsights/sparkopy/releases/tag/v0.1.0

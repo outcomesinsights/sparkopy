@@ -1,7 +1,7 @@
 [package]
 name = "sparkopy"
 # Releases are named by their v* tag. Keep this version equal to the latest tag.
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 rust-version = "1.95"
 description = "Export one Spark Connect table to one Parquet file"
