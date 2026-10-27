@@ -178,5 +178,5 @@ cython_debug/
 # because a first-time bd 1.1.2 `bd init` rewrites .beads/.gitignore wholesale.
 .beads/interactions.jsonl
 
-# Go build output (just build)
-/bin/
+# Go build output (just build, just release-assets)
+/dist/

@@ -1,18 +1,52 @@
-# Run the full test suite (matches CI)
-test:
-    uv run ruff check src/ tests/
-    uv run ruff format --check src/ tests/
-    uv run pytest tests/ -v
+# Format Go and Python in place, and apply ruff's safe autofixes
+fmt:
+    gofmt -w cmd internal
+    uv run --locked ruff format src/ tests/
+    uv run --locked ruff check --fix src/ tests/
 
-# Build the Go sparkopy as one static linux/amd64 binary at bin/sparkopy
-build:
-    CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags='-s -w' -o bin/sparkopy ./cmd/sparkopy
-
-# Run the Go tests, go vet and the gofmt check
-go-test:
-    go vet ./...
+# Fail if fmt would change anything; rewrites nothing
+fmt-check:
     test -z "$(gofmt -l cmd internal)" || { gofmt -l cmd internal; exit 1; }
+    uv run --locked ruff format --check src/ tests/
+
+# Every non-rewriting check: go vet, ruff, the workflow linters and the commit subjects.
+# cog starts after 27abdf5 ("bd init: ...", not a conventional subject, kept as history).
+# After the first release tag, switch to gator's tagged form:
+#   tag="$(git describe --tags --abbrev=0 --match 'v*')" && cog check --ignore-merge-commits "$tag..HEAD"
+lint:
+    go vet ./...
+    uv run --locked ruff check src/ tests/
+    actionlint
+    zizmor --offline --config .github/zizmor.yml .
+    cog check --ignore-merge-commits 27abdf539336898bd269afe20f211dc12cdfe1d7..HEAD
+
+# Run the Go and the Python tests
+test: go-test py-test
+
+# Run the Go tests
+go-test:
     go test ./...
+
+# Run the Python tests (until the Python code is removed)
+py-test:
+    uv run --locked pytest tests/ -v
+
+# The full local equivalent of CI
+ci: fmt-check lint test
+
+# The checks the commit hook runs
+pre-commit: fmt-check lint
+
+# Build the Go sparkopy as one static linux binary at dist/sparkopy
+build arch="amd64":
+    CGO_ENABLED=0 GOOS=linux GOARCH={{arch}} go build -trimpath -ldflags='-s -w' -o dist/sparkopy ./cmd/sparkopy
+
+# Build static linux/amd64 and linux/arm64 binaries and SHA256SUMS in dist/release
+release-assets:
+    rm -rf dist/release
+    CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags='-s -w' -o dist/release/sparkopy-linux-amd64 ./cmd/sparkopy
+    CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -trimpath -ldflags='-s -w' -o dist/release/sparkopy-linux-arm64 ./cmd/sparkopy
+    cd dist/release && sha256sum sparkopy-linux-amd64 sparkopy-linux-arm64 > SHA256SUMS
 
 # Export every table of DATABASE from a real Spark Connect server and compare
 # each file with Spark's schema and row count. Local only: it needs
