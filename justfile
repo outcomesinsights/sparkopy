@@ -14,6 +14,23 @@ go-test:
     test -z "$(gofmt -l cmd internal)" || { gofmt -l cmd internal; exit 1; }
     go test ./...
 
+# Export every table of DATABASE from a real Spark Connect server and compare
+# each file with Spark's schema and row count. Local only: it needs
+# SPARKOPY_TEST_SPARK_URI (such as sc://titan.jsaw.io:15002) and skips without it.
+parity database="export_f5a5e28f_1c98_45a1_b111_41aa272976cb":
+    #!/usr/bin/env zsh
+    set -o pipefail
+    if [[ -z ${SPARKOPY_TEST_SPARK_URI:-} ]]; then
+      echo "parity: SPARKOPY_TEST_SPARK_URI is not set, so the parity check is skipped"
+      exit 0
+    fi
+    mkdir -p claude_stuff
+    log=claude_stuff/parity-$(date +%Y%m%d-%H%M%S).log
+    SPARKOPY_PARITY_DATABASE={{database}} go test -count=1 -timeout 60m -run '^TestParity$' -v ./cmd/sparkopy 2>&1 | tee $log
+    rc=${pipestatus[1]}
+    echo "parity log: $log"
+    exit $rc
+
 # Regenerate the Go gRPC stubs from the Spark v3.5.1 protobuf files in proto/
 proto:
     #!/usr/bin/env zsh
