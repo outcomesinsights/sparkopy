@@ -8,6 +8,12 @@ updates:
       default-days: 7
     open-pull-requests-limit: 10
     groups:
+      # tonic is built on prost, and protox hands tonic-prost-build a prost-types
+      # FileDescriptorSet, so a bump of one alone builds two prost versions and fails.
+      # This group comes first because Dependabot puts a dependency in the first group
+      # that matches. It has no update-types, so it also takes the major bumps.
+      spark-connect-grpc:
+        patterns: ["tonic*", "prost*", "protox"]
       cargo-minor-and-patch:
         update-types: ["minor", "patch"]
   - package-ecosystem: github-actions
