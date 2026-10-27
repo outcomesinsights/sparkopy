@@ -167,8 +167,8 @@ cython_debug/
 .claude/
 
 # Generated comparison outputs
-databricks/
-spark/
+/databricks/
+/spark/
 
 # Beads / Dolt files (added by bd init)
 .beads-credential-key
@@ -177,3 +177,6 @@ spark/
 # bd agent-audit sidecar: never versioned (hm-40s). Root, not .beads/.gitignore,
 # because a first-time bd 1.1.2 `bd init` rewrites .beads/.gitignore wholesale.
 .beads/interactions.jsonl
+
+# Go build output (just build)
+/bin/
