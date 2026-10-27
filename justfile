@@ -1,3 +1,13 @@
+# Install the pinned tools (mise.toml) and the locked Python environment, then arm
+# the tracked hooks in .githooks (gator's githooks standard). Each clone, host and
+# worktree runs this once. bd bootstrap, never bd init: in a clone that already has
+# .beads, init re-points the hooks at .beads/hooks and commits.
+setup:
+    mise install
+    uv sync --locked
+    @if [ -d .beads ] && [ ! -d .beads/embeddeddolt ] && command -v bd >/dev/null 2>&1; then bd bootstrap; fi
+    @if [ -d .githooks ]; then git config core.hooksPath .githooks; fi
+
 # Format Go and Python in place, and apply ruff's safe autofixes
 fmt:
     gofmt -w cmd internal
