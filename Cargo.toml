@@ -29,7 +29,7 @@ tonic = { version = "0.13.1", default-features = false, features = ["server", "r
 
 [build-dependencies]
 # protox compiles the .proto files in Rust, so a build needs no protoc on the host.
-protox = "0.7.2"
+protox = "0.10.0"
 tonic-build = { version = "0.13.1", default-features = false, features = ["prost"] }
 
 # Release builds are optimized for size. The spike measured 3.9 MB against 11 MB for the
