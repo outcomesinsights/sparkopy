@@ -4,7 +4,7 @@
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("cargo:rerun-if-changed=proto");
     let files = protox::compile(["spark/connect/base.proto"], ["proto"])?;
-    tonic_build::configure()
+    tonic_prost_build::configure()
         // The tests run a fake server that implements only ExecutePlan. Every other
         // method of the generated server trait answers Unimplemented.
         .generate_default_stubs(true)

@@ -14,10 +14,13 @@ arrow-ipc = { version = "60.0.0", default-features = false }
 clap = { version = "4.6.7", features = ["derive"] }
 # Only the snappy codec: sparkopy writes snappy, and the other codecs add size and C code.
 parquet = { version = "60.0.0", default-features = false, features = ["arrow", "snap"] }
-prost = "0.13.5"
-prost-types = "0.13.5"
+# tonic*, prost* and protox must move together, so Dependabot proposes them in one PR.
+prost = "0.14.4"
+prost-types = "0.14.4"
 tokio = { version = "1.54.1", features = ["rt-multi-thread", "macros", "signal"] }
-tonic = { version = "0.13.1", default-features = false, features = ["channel", "codegen", "prost"] }
+tonic = { version = "0.14.7", default-features = false, features = ["channel", "codegen"] }
+# The generated client and server encode messages with tonic-prost's ProstCodec.
+tonic-prost = "0.14.7"
 uuid = { version = "1.26.1", features = ["v4"] }
 
 [dev-dependencies]
@@ -25,12 +28,14 @@ arrow-array = "60.0.0"
 arrow-schema = "60.0.0"
 tokio-stream = { version = "0.1.19", features = ["net"] }
 # The tests run an in-process Spark Connect server.
-tonic = { version = "0.13.1", default-features = false, features = ["server", "router"] }
+tonic = { version = "0.14.7", default-features = false, features = ["server", "router"] }
 
 [build-dependencies]
 # protox compiles the .proto files in Rust, so a build needs no protoc on the host.
-protox = "0.7.2"
-tonic-build = { version = "0.13.1", default-features = false, features = ["prost"] }
+protox = "0.10.0"
+# tonic 0.14 moved the prost code generation out of tonic-build into tonic-prost-build.
+# Its default transport feature is off, as tonic-build's was: no generated connect() helpers.
+tonic-prost-build = { version = "0.14.7", default-features = false }
 
 # Release builds are optimized for size. The spike measured 3.9 MB against 11 MB for the
 # default release profile, and it was not slower on the 5.3-million-row events table.
