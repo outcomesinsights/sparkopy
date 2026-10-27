@@ -1,0 +1,9 @@
+# Tool pins for the recipes in justfile, copied line for line from gator's
+# standard/mise.toml. Go comes from go.mod (actions/setup-go in CI, GOTOOLCHAIN locally).
+[tools]
+just = "1"
+uv = "0"
+"aqua:rhysd/actionlint" = "1"
+zizmor = "1"
+cocogitto = "7"
+pinact = "5"
