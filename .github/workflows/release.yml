@@ -1,6 +1,6 @@
 name: Release
 
-# A pushed v* tag builds static linux/amd64 and linux/arm64 binaries and attaches them,
+# A pushed v* tag builds static (musl) linux/amd64 and linux/arm64 binaries and attaches them,
 # with a SHA256SUMS file, to a GitHub release named after the tag.
 on:
   push:
@@ -20,10 +20,17 @@ jobs:
       - uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4.0.0
         with:
           just-version: "1"
-      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+      # zig and cargo-zigbuild, pinned in mise.toml, link the static musl binaries for both
+      # architectures. No tool cache in a release job.
+      - uses: jdx/mise-action@6be3c7ed4c21d4f76b208d351d95aac273ebb76d # v5.2.4
         with:
-          go-version-file: go.mod
-          cache: false # no build cache in a release job
+          install_args: zig aqua:rust-cross/cargo-zigbuild
+          cache: false
+      # The version in rust-toolchain.toml: change both together. No cargo cache in a release job.
+      - uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # master
+        with:
+          toolchain: 1.95.0
+          targets: x86_64-unknown-linux-musl, aarch64-unknown-linux-musl
       - run: just release-assets
       - name: Create the release
         env:

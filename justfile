@@ -50,9 +50,10 @@ ci: fmt-check lint test
 # The checks the commit hook runs
 pre-commit: fmt-check lint
 
-# Build sparkopy as one static linux/amd64 (musl) binary at dist/sparkopy
+# Build sparkopy as one static linux/amd64 (musl) binary at dist/sparkopy. It is linked
+# as release-assets links it, so it is the same file as sparkopy-linux-amd64.
 build:
-    cargo build --release --locked --target x86_64-unknown-linux-musl
+    cargo zigbuild --release --locked --target x86_64-unknown-linux-musl
     mkdir -p dist
     cp {{target_dir}}/x86_64-unknown-linux-musl/release/sparkopy dist/sparkopy
 
