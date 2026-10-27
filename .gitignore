@@ -166,10 +166,6 @@ cython_debug/
 # Local Claude settings/work products
 .claude/
 
-# Generated comparison outputs
-/databricks/
-/spark/
-
 # Beads / Dolt files (added by bd init)
 .beads-credential-key
 .beads/proxieddb/

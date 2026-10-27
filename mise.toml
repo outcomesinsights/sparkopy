@@ -2,7 +2,6 @@
 # gator's standard/mise.toml. Rust comes from rust-toolchain.toml (rustup), not from mise.
 [tools]
 just = "1"
-uv = "0"
 "aqua:rhysd/actionlint" = "1"
 zizmor = "1"
 cocogitto = "7"
