@@ -1,0 +1,42 @@
+[package]
+name = "sparkopy"
+# Releases are named by their v* tag; nothing reads this version.
+version = "0.0.0"
+edition = "2024"
+rust-version = "1.95"
+description = "Export one Spark Connect table to one Parquet file"
+license = "MIT"
+publish = false
+
+[dependencies]
+anyhow = "1.0.104"
+arrow-ipc = { version = "60.0.0", default-features = false }
+clap = { version = "4.6.7", features = ["derive"] }
+# Only the snappy codec: sparkopy writes snappy, and the other codecs add size and C code.
+parquet = { version = "60.0.0", default-features = false, features = ["arrow", "snap"] }
+prost = "0.13.5"
+prost-types = "0.13.5"
+tokio = { version = "1.54.1", features = ["rt-multi-thread", "macros", "signal"] }
+tonic = { version = "0.13.1", default-features = false, features = ["channel", "codegen", "prost"] }
+uuid = { version = "1.26.1", features = ["v4"] }
+
+[dev-dependencies]
+arrow-array = "60.0.0"
+arrow-schema = "60.0.0"
+tokio-stream = { version = "0.1.19", features = ["net"] }
+# The tests run an in-process Spark Connect server.
+tonic = { version = "0.13.1", default-features = false, features = ["server", "router"] }
+
+[build-dependencies]
+# protox compiles the .proto files in Rust, so a build needs no protoc on the host.
+protox = "0.7.2"
+tonic-build = { version = "0.13.1", default-features = false, features = ["prost"] }
+
+# Release builds are optimized for size. The spike measured 3.9 MB against 11 MB for the
+# default release profile, and it was not slower on the 5.3-million-row events table.
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+strip = true
+panic = "abort"

@@ -10,7 +10,7 @@ updates:
     groups:
       minor-and-patch:
         update-types: ["minor", "patch"]
-  - package-ecosystem: gomod
+  - package-ecosystem: cargo
     directory: "/"
     schedule:
       interval: weekly
@@ -18,7 +18,7 @@ updates:
       default-days: 7
     open-pull-requests-limit: 10
     groups:
-      go-minor-and-patch:
+      cargo-minor-and-patch:
         update-types: ["minor", "patch"]
   - package-ecosystem: github-actions
     directory: "/"

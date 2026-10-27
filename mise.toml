@@ -1,5 +1,5 @@
-# Tool pins for the recipes in justfile, copied line for line from gator's
-# standard/mise.toml. Go comes from go.mod (actions/setup-go in CI, GOTOOLCHAIN locally).
+# Tool pins for the recipes in justfile. The first block is copied line for line from
+# gator's standard/mise.toml. Rust comes from rust-toolchain.toml (rustup), not from mise.
 [tools]
 just = "1"
 uv = "0"
@@ -7,3 +7,10 @@ uv = "0"
 zizmor = "1"
 cocogitto = "7"
 pinact = "5"
+
+# `just release-assets` only: cargo-zigbuild links the static musl binaries for amd64 and
+# arm64 with zig. These are not in gator's standard. They are pinned to a minor version,
+# not a major, because each cargo-zigbuild release supports a limited range of zig versions
+# (0.15.2 with 0.24.0 measured on titan, 2026-10-27).
+zig = "0.15"
+"aqua:rust-cross/cargo-zigbuild" = "0.24"

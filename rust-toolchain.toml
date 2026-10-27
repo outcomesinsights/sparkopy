@@ -1,0 +1,9 @@
+# The Rust toolchain for sparkopy. rustup reads this file, so local builds, the hooks and CI
+# use the same compiler, rustfmt and clippy. The dtolnay/rust-toolchain steps in
+# .github/workflows name the same version: change them together. The musl targets are for
+# `just build` and `just release-assets`.
+[toolchain]
+channel = "1.95.0"
+profile = "minimal"
+components = ["rustfmt", "clippy"]
+targets = ["x86_64-unknown-linux-musl", "aarch64-unknown-linux-musl"]

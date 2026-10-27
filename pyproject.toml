@@ -59,3 +59,8 @@ ignore = ["E501"]
 [tool.ruff.format]
 quote-style = "double"
 indent-style = "space"
+
+# The Rust crate shares the repo root. Without this, a local sdist walks cargo's target/
+# (gigabytes) for minutes, although .gitignore lists it.
+[tool.hatch.build.targets.sdist]
+exclude = ["/target"]
